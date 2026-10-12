@@ -1,0 +1,55 @@
+
+---
+- name: Install Docker, Docker Compose and Jenkins
+  hosts: servers
+  become: yes
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - docker.io
+        - docker-compose-v2
+        - fontconfig
+        - openjdk-21-jre
+        - curl
+        - ca-certificates
+        - gnupg
+
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Jenkins repository key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: /etc/apt/keyrings/jenkins.asc
+        mode: '0644'
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/jenkins.asc] https://pkg.jenkins.io/debian-stable binary/"
+        filename: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Start Docker and Jenkins
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - docker
+        - jenkins
+
